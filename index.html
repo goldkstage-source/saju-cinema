@@ -1,0 +1,1224 @@
+<title>사주 시네마</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+<style>
+/* ============ layout concept ============
+   Vertical scroll app: hero input -> pillar reveal -> stat dashboard -> "인생 시네마" animated player.
+   Palette drawn from obangsaek (오행 5색) against a lacquered night-indigo ground, gold as the single accent.
+*/
+:root{
+  --ink:#0d0f16;
+  --panel:#171a26;
+  --panel-2:#1f2333;
+  --line:rgba(240,235,222,.09);
+  --fg:#f3efe4;
+  --fg-dim:#a8a4b3;
+  --accent:#e3b559;
+  --accent-dim:rgba(227,181,89,.16);
+  --wood:#6fae82;
+  --fire:#e2694f;
+  --earth:#d9ad55;
+  --metal:#cdd3da;
+  --water:#6f93d1;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --ink:#faf6ee;
+    --panel:#ffffff;
+    --panel-2:#f4eee1;
+    --line:rgba(30,25,15,.1);
+    --fg:#211d16;
+    --fg-dim:#6f6a5c;
+    --accent:#b8802c;
+    --accent-dim:rgba(184,128,44,.12);
+    --shadow: 0 16px 40px rgba(80,60,20,.12);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"]{
+  --ink:#faf6ee;
+  --panel:#ffffff;
+  --panel-2:#f4eee1;
+  --line:rgba(30,25,15,.1);
+  --fg:#211d16;
+  --fg-dim:#6f6a5c;
+  --accent:#b8802c;
+  --accent-dim:rgba(184,128,44,.12);
+  --shadow: 0 16px 40px rgba(80,60,20,.12);
+  color-scheme: light;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, var(--accent-dim), transparent 60%),
+    var(--ink);
+  color:var(--fg);
+  font-family:"Noto Sans KR", "Malgun Gothic", sans-serif;
+  padding-inline:16px;
+  padding-block:32px 64px;
+}
+h1,h2,h3,.display{
+  font-family:"Gowun Batang","Noto Serif KR",serif;
+  text-wrap:balance;
+}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:28px;}
+a{color:var(--accent);}
+
+/* ---------- hero ---------- */
+.hero{
+  text-align:center;
+  padding-block:28px 8px;
+  position:relative;
+}
+.eyebrow{
+  font-size:.78rem; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--accent); font-weight:700; margin:0 0 10px;
+}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem); margin:0 0 10px; font-weight:700;}
+.hero p{color:var(--fg-dim); font-size:1rem; max-width:520px; margin:0 auto; line-height:1.7;}
+
+/* ---------- card ---------- */
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:24px;
+  box-shadow:var(--shadow);
+}
+
+/* ---------- form ---------- */
+.form-card{padding:26px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:.82rem;color:var(--fg-dim);font-weight:500;}
+.field input, .field select{
+  font:inherit; font-size:.98rem;
+  background:var(--panel-2); color:var(--fg);
+  border:1px solid var(--line); border-radius:10px;
+  padding:11px 12px; width:100%;
+}
+.field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:1px;}
+.gender-toggle{display:flex; gap:8px;}
+.gender-toggle button{
+  flex:1; padding:11px; border-radius:10px; border:1px solid var(--line);
+  background:var(--panel-2); color:var(--fg-dim); font:inherit; cursor:pointer;
+  transition:all .15s;
+}
+.gender-toggle button[aria-pressed="true"]{
+  background:var(--accent); color:#1b1406; border-color:var(--accent); font-weight:700;
+}
+.submit-btn{
+  margin-top:6px; width:100%; padding:15px; border:none; border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),#f0cd82);
+  color:#241a05; font:inherit; font-weight:900; font-size:1.02rem; letter-spacing:.02em;
+  cursor:pointer; box-shadow:0 10px 26px rgba(227,181,89,.28);
+  transition:transform .15s, box-shadow .15s;
+}
+.submit-btn:hover{transform:translateY(-2px); box-shadow:0 14px 32px rgba(227,181,89,.4);}
+.submit-btn:active{transform:translateY(0);}
+.note{font-size:.76rem; color:var(--fg-dim); text-align:center; margin-top:2px; line-height:1.6;}
+
+#results{display:none; flex-direction:column; gap:28px;}
+#results.show{display:flex;}
+.section-title{display:flex; align-items:baseline; gap:10px; margin:0 0 4px;}
+.section-title h2{font-size:1.4rem; margin:0;}
+.section-title span{font-size:.78rem; color:var(--fg-dim); letter-spacing:.05em;}
+
+/* ---------- pillars ---------- */
+.pillars{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+.pillar{
+  background:var(--panel-2); border:1px solid var(--line); border-radius:16px;
+  padding:14px 8px; text-align:center; min-width:0;
+  transform:rotateX(90deg); opacity:0; animation:flipIn .55s ease forwards;
+}
+.pillar:nth-child(1){animation-delay:.05s;}
+.pillar:nth-child(2){animation-delay:.18s;}
+.pillar:nth-child(3){animation-delay:.31s;}
+.pillar:nth-child(4){animation-delay:.44s;}
+@keyframes flipIn{to{transform:rotateX(0deg); opacity:1;}}
+@media (prefers-reduced-motion: reduce){
+  .pillar{animation:none; opacity:1; transform:none;}
+}
+.pillar .role{font-size:.72rem; color:var(--fg-dim); letter-spacing:.08em;}
+.pillar .han{font-family:"Gowun Batang",serif; font-size:1.7rem; line-height:1.25; margin:6px 0 2px;}
+.pillar .kor{font-size:.8rem; color:var(--fg-dim);}
+.pillar .stem-dot, .pillar .branch-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px;}
+
+/* ---------- stat bars (십성) ---------- */
+.stat-row{display:grid; grid-template-columns:64px 1fr 34px; align-items:center; gap:10px; margin-bottom:10px;}
+.stat-row .label{font-size:.86rem; font-weight:700;}
+.stat-track{height:10px; border-radius:6px; background:var(--panel-2); overflow:hidden;}
+.stat-fill{height:100%; border-radius:6px; width:0%; transition:width 1s cubic-bezier(.2,.9,.2,1);}
+.stat-row .count{font-size:.8rem; color:var(--fg-dim); text-align:right; font-variant-numeric:tabular-nums;}
+
+/* ---------- element radar ---------- */
+.elem-wrap{display:flex; gap:22px; flex-wrap:wrap; align-items:center; justify-content:center;}
+.elem-wrap svg{max-width:100%;}
+.elem-legend{display:flex; flex-direction:column; gap:8px; min-width:140px;}
+.elem-legend .row{display:flex; align-items:center; gap:8px; font-size:.85rem;}
+.elem-legend .dot{width:10px; height:10px; border-radius:50%;}
+
+/* ---------- two-col cards ---------- */
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.info-card{background:var(--panel-2); border:1px solid var(--line); border-radius:16px; padding:18px;}
+.info-card h3{margin:0 0 8px; font-size:1.05rem; display:flex; align-items:center; gap:8px;}
+.info-card ul{margin:0; padding-left:18px; font-size:.9rem; line-height:1.7; color:var(--fg);}
+.info-card p{margin:0; font-size:.9rem; line-height:1.75; color:var(--fg);}
+.chip-row{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;}
+.chip{background:var(--accent-dim); color:var(--accent); border-radius:999px; padding:5px 12px; font-size:.8rem; font-weight:700;}
+
+/* ---------- yongsin hero card ---------- */
+.yongsin-card{
+  background:linear-gradient(150deg,var(--panel-2),var(--panel));
+  border:1px solid var(--accent); border-radius:20px; padding:24px; position:relative; overflow:hidden;
+}
+.yongsin-card::after{
+  content:""; position:absolute; inset:-40% -20% auto auto; width:220px; height:220px; border-radius:50%;
+  background:radial-gradient(circle, var(--accent-dim), transparent 70%);
+}
+.yongsin-badge{
+  display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%;
+  font-size:1.6rem; font-weight:900; font-family:"Gowun Batang",serif; color:#1b1406;
+  margin-bottom:12px;
+}
+
+/* ---------- 인생 한방 조언 ---------- */
+.advice-card{
+  background:linear-gradient(155deg,#211a2c,#3d2413); border:1px solid #e3b559; border-radius:20px;
+  padding:36px 26px; text-align:center; position:relative; overflow:hidden; box-shadow:var(--shadow);
+}
+.advice-card::before{
+  content:""; position:absolute; inset:-35% -10% auto auto; width:280px; height:280px; border-radius:50%;
+  background:radial-gradient(circle, rgba(227,181,89,.3), transparent 70%);
+}
+.advice-card::after{
+  content:""; position:absolute; inset:auto auto -35% -10%; width:220px; height:220px; border-radius:50%;
+  background:radial-gradient(circle, rgba(227,181,89,.18), transparent 70%);
+}
+.advice-eyebrow{
+  position:relative; z-index:1; font-size:.72rem; letter-spacing:.32em; color:#e3b559; font-weight:800; margin:0 0 12px;
+  text-transform:uppercase;
+}
+.advice-card h2{position:relative; z-index:1; color:#fdf6e8; font-size:1.7rem; margin:0 0 16px; font-weight:700;}
+.advice-card p{position:relative; z-index:1; color:#e6e1d6; font-size:1.02rem; line-height:1.9; max-width:480px; margin:0 auto;}
+
+/* ---------- 배우자상 ---------- */
+.spouse-wrap{display:flex; gap:22px; align-items:flex-start; flex-wrap:wrap;}
+.polaroid{
+  background:#fdf9ef; padding:10px 10px 28px; border-radius:4px; box-shadow:0 14px 28px rgba(0,0,0,.35);
+  transform:rotate(-3deg); width:180px; flex:none; transition:transform .25s;
+}
+.polaroid:hover{transform:rotate(0deg) scale(1.02);}
+.polaroid-photo{width:100%; aspect-ratio:1/1; border-radius:2px; overflow:hidden; position:relative; background:#2a2a34;}
+.polaroid-photo svg{position:absolute; inset:0; width:100%; height:100%;}
+.polaroid-caption{text-align:center; font-family:"Gowun Batang",serif; color:#3a3226; font-size:.82rem; margin-top:10px;}
+.spouse-info{flex:1; min-width:220px;}
+.spouse-info p{margin:10px 0 0; font-size:.92rem; line-height:1.8; color:var(--fg);}
+
+/* ---------- comic (인생 만화) ---------- */
+.comic-card{padding:0; overflow:hidden;}
+.comic-head{padding:20px 24px 0;}
+.act-chips{display:flex; gap:8px; margin:16px 24px 0;}
+.act-chip{
+  flex:1; text-align:center; padding:10px 6px; border-radius:10px; font-size:.8rem; font-weight:700;
+  background:var(--panel-2); color:var(--fg-dim); border:1px solid var(--line); cursor:pointer; transition:all .2s; font:inherit;
+}
+.act-chip.active{background:var(--accent); color:#1b1406; border-color:var(--accent);}
+.chapter-banner{
+  margin:16px 24px 0; padding:14px 16px; background:var(--panel-2); border:1px solid var(--line);
+  border-left:4px solid var(--accent); border-radius:10px;
+}
+.chapter-banner h3{margin:0 0 4px; font-size:1.05rem;}
+.chapter-banner p{margin:0; font-size:.84rem; color:var(--fg-dim); line-height:1.6;}
+
+/* ---------- single-panel reader ---------- */
+.reader{padding:16px 24px 24px;}
+.reader-topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+.page-count{font-size:.85rem; color:var(--fg-dim); font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;}
+.dots{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
+.page-dot{width:6px; height:6px; border-radius:50%; background:var(--line); transition:all .2s;}
+.page-dot.seen{background:var(--fg-dim);}
+.page-dot.active{background:var(--accent); width:18px; border-radius:4px;}
+
+.stage-wrap{position:relative; border-radius:14px; overflow:hidden; box-shadow:0 12px 32px rgba(0,0,0,.4); touch-action:pan-y;}
+.panel-stage{
+  position:relative; width:100%; overflow:hidden; border:3px solid #15110c; background:#1a1a22;
+  aspect-ratio:3/4;
+}
+.panel-stage.size-w{aspect-ratio:4/3;}
+.panel-stage.size-s{aspect-ratio:16/9;}
+.scene-svg{position:absolute; inset:0; width:100%; height:100%; z-index:0; display:block;}
+.panel-stage::before{
+  content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay; opacity:.22; z-index:1;
+  background-image:radial-gradient(rgba(255,255,255,.5) 1px, transparent 1.3px); background-size:5px 5px;
+}
+.panel-stage::after{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+  box-shadow:inset 0 0 50px rgba(0,0,0,.35);
+}
+@media (prefers-reduced-motion: no-preference){
+  .panel-stage.anim-next{animation:slideNext .32s ease;}
+  .panel-stage.anim-prev{animation:slidePrev .32s ease;}
+}
+@keyframes slideNext{0%{transform:translateX(22px); opacity:.25;} 100%{transform:translateX(0); opacity:1;}}
+@keyframes slidePrev{0%{transform:translateX(-22px); opacity:.25;} 100%{transform:translateX(0); opacity:1;}}
+.tap-zone{position:absolute; top:0; bottom:0; width:36%; background:transparent; border:none; cursor:pointer; z-index:7; padding:0;}
+.tap-zone.left{left:0;}
+.tap-zone.right{right:0;}
+.tap-zone::after{
+  content:"›"; position:absolute; top:50%; color:#fff; font-size:2rem; font-weight:900; opacity:0;
+  transition:opacity .15s; text-shadow:0 2px 6px rgba(0,0,0,.5);
+  transform:translateY(-50%);
+}
+.tap-zone.left::after{content:"‹"; left:10px;}
+.tap-zone.right::after{right:10px;}
+.tap-zone:hover::after{opacity:.7;}
+.fx-blob{position:absolute; border-radius:50%; filter:blur(9px); pointer-events:none; z-index:2;}
+.shadow-blob{mix-blend-mode:multiply; opacity:.6;}
+.light-blob{mix-blend-mode:screen; opacity:.8;}
+.char-svg{position:absolute; left:50%; bottom:4%; transform:translateX(-50%); width:48%; height:auto; z-index:3; filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));}
+.panel-stage.size-s .char-svg{width:26%;}
+.panel-stage.size-w .char-svg{width:34%;}
+.companion{position:absolute; bottom:9%; right:7%; font-size:1.7rem; z-index:3; filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
+.sfx{
+  position:absolute; font-family:"Gowun Batang",serif; font-weight:900; font-size:1.9rem; color:#fff34d;
+  -webkit-text-stroke:2px #15110c; text-shadow:3px 3px 0 #15110c; transform:rotate(-8deg); z-index:5; pointer-events:none;
+}
+.panel-stage.size-s .sfx{font-size:2.8rem;}
+.speech{
+  position:absolute; background:#fdf9ef; color:#181310; font-size:.9rem; font-weight:700; line-height:1.4;
+  padding:8px 12px; border-radius:13px; border:2px solid #181310; max-width:62%; z-index:5;
+  box-shadow:2px 3px 0 rgba(0,0,0,.25);
+}
+.panel-num-badge{
+  position:absolute; top:10px; left:10px; z-index:6; background:#15110c; color:#ffd76b; font-size:.72rem; font-weight:800;
+  padding:3px 8px; border-radius:5px;
+}
+.narration{
+  margin-top:14px; background:var(--panel-2); border:1px solid var(--line); border-left:4px solid var(--accent);
+  border-radius:12px; padding:18px 20px; font-size:1.08rem; line-height:1.85; color:var(--fg); font-weight:500;
+  min-height:64px;
+}
+@media (prefers-reduced-motion: no-preference){
+  .narration.anim-next, .narration.anim-prev{animation:fadeIn .32s ease;}
+}
+@keyframes fadeIn{0%{opacity:.15;} 100%{opacity:1;}}
+.narration .num{
+  display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%;
+  background:var(--accent); color:#1b1406; font-size:.76rem; font-weight:900; margin-right:9px; vertical-align:-1px;
+}
+.reader-controls{display:flex; align-items:center; gap:10px; margin-top:14px;}
+.nav-btn{
+  flex:1; padding:14px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2);
+  color:var(--fg); font:inherit; font-weight:700; font-size:.92rem; cursor:pointer; text-align:center;
+}
+.nav-btn:disabled{opacity:.35; cursor:default;}
+.nav-btn.primary{background:var(--accent); color:#1b1406; border-color:var(--accent);}
+.swipe-hint{text-align:center; font-size:.74rem; color:var(--fg-dim); margin-top:8px;}
+
+.cta-thumb{
+  cursor:pointer; border:none; width:100%; text-align:left; font:inherit; color:inherit;
+  background:linear-gradient(150deg,#20263a,#141826);
+  border-radius:20px; padding:0; overflow:hidden; position:relative;
+  box-shadow:var(--shadow);
+}
+:root[data-theme="light"] .cta-thumb, .cta-thumb{ }
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .cta-thumb{background:linear-gradient(150deg,#2a2f24,#181c14);}}
+:root[data-theme="light"] .cta-thumb{background:linear-gradient(150deg,#2a2f24,#181c14);}
+.cta-thumb .inner{padding:26px; display:flex; align-items:center; gap:20px; position:relative; z-index:2;}
+.cta-thumb .playcircle{
+  flex:none; width:62px; height:62px; border-radius:50%; background:var(--accent);
+  display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:#1b1406;
+  box-shadow:0 0 0 6px rgba(227,181,89,.18);
+}
+.cta-thumb h3{margin:0 0 4px; color:#f3efe4; font-size:1.2rem;}
+.cta-thumb p{margin:0; color:#c9c4d6; font-size:.86rem;}
+.cta-thumb .glow{position:absolute; inset:0; background:radial-gradient(500px 200px at 80% 0%, rgba(227,181,89,.25), transparent 70%);}
+
+footer{text-align:center; color:var(--fg-dim); font-size:.76rem; padding-top:10px; line-height:1.8;}
+
+@media (max-width:560px){
+  .form-grid{grid-template-columns:1fr;}
+  .pillars{grid-template-columns:repeat(2,1fr);}
+  .grid2{grid-template-columns:1fr;}
+  .elem-wrap{flex-direction:column;}
+  .speech{max-width:74%; font-size:.8rem;}
+  .narration{font-size:1rem; padding:16px;}
+}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <p class="eyebrow">사주팔자 × 인생 만화</p>
+    <h1>내 인생, 한 편의 만화라면</h1>
+    <p>생년월일과 태어난 시간을 입력하면 용신·성격·직업·인간관계·배우자상을 분석하고, 초년·중년·말년을 30컷 만화로 그려드려요.</p>
+  </div>
+
+  <form class="card form-card" id="sajuForm">
+    <div class="form-grid">
+      <div class="field">
+        <label for="birthDate">생년월일 (양력)</label>
+        <input type="date" id="birthDate" value="1990-05-15" min="1920-01-01" max="2025-12-31" required>
+      </div>
+      <div class="field">
+        <label for="birthTime">태어난 시간</label>
+        <input type="time" id="birthTime" value="08:30" required>
+      </div>
+      <div class="field full">
+        <label>성별</label>
+        <div class="gender-toggle" role="group" aria-label="성별 선택">
+          <button type="button" data-gender="female" aria-pressed="true">여성</button>
+          <button type="button" data-gender="male" aria-pressed="false">남성</button>
+        </div>
+      </div>
+    </div>
+    <button class="submit-btn" type="submit">📖 내 인생 만화 보기</button>
+    <p class="note">입력값은 이 브라우저 안에서만 계산되며 저장되지 않아요 · 절기 기준 근사 계산 · 음력 생일은 양력으로 변환 후 입력해 주세요</p>
+  </form>
+
+  <div id="results">
+
+    <section class="card">
+      <div class="section-title"><h2>사주팔자</h2><span>年 · 月 · 日 · 時</span></div>
+      <div class="pillars" id="pillars"></div>
+    </section>
+
+    <button type="button" class="cta-thumb" id="comicCta">
+      <div class="glow"></div>
+      <div class="inner">
+        <div class="playcircle">📖</div>
+        <div>
+          <h3 id="comicCtaName">OOO 님의 인생 만화</h3>
+          <p>초년 · 중년 · 말년, 총 30컷 만화로 보기</p>
+        </div>
+      </div>
+    </button>
+
+    <section class="card yongsin-card">
+      <div class="yongsin-badge" id="yongsinBadge">木</div>
+      <div class="section-title"><h2 style="margin-bottom:4px">용신 분석</h2></div>
+      <p id="yongsinText" style="margin:0 0 12px; line-height:1.8; font-size:.95rem;"></p>
+      <div class="chip-row" id="yongsinChips"></div>
+    </section>
+
+    <section class="card advice-card">
+      <p class="advice-eyebrow">인생 한방 조언</p>
+      <h2 id="adviceHeadline">타오르는 불꽃처럼</h2>
+      <p id="adviceBody"></p>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>십성 분포</h2><span>비겁 · 식상 · 재성 · 관성 · 인성</span></div>
+      <div id="statBars" style="margin-top:14px;"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>오행 밸런스</h2><span>목 · 화 · 토 · 금 · 수</span></div>
+      <div class="elem-wrap">
+        <svg viewBox="0 0 240 220" width="240" height="220" id="elemRadar"></svg>
+        <div class="elem-legend" id="elemLegend"></div>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="info-card">
+        <h3>✨ 타고난 장점</h3>
+        <ul id="strengthList"></ul>
+      </div>
+      <div class="info-card">
+        <h3>💼 어울리는 직업</h3>
+        <div class="chip-row" id="careerChips"></div>
+      </div>
+      <div class="info-card" style="grid-column:1/-1;">
+        <h3>💞 어울리는 인간관계</h3>
+        <p id="relationText"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>💑 미래의 배우자상</h2><span>배우자궁(일지) · 배우자성 기준</span></div>
+      <div class="spouse-wrap" style="margin-top:14px;">
+        <div class="polaroid">
+          <div class="polaroid-photo" id="spousePhoto"></div>
+          <p class="polaroid-caption" id="spouseCaption">나의 인연</p>
+        </div>
+        <div class="spouse-info">
+          <div class="chip-row" id="spouseChips"></div>
+          <p id="spouseText"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card comic-card" id="comicSection">
+      <div class="comic-head">
+        <div class="section-title"><h2>인생 만화</h2><span>총 30컷 · 초년 10 · 중년 10 · 말년 10</span></div>
+      </div>
+      <div class="act-chips" id="actChips">
+        <button type="button" class="act-chip" data-act="0">1장 · 초년</button>
+        <button type="button" class="act-chip" data-act="1">2장 · 중년</button>
+        <button type="button" class="act-chip" data-act="2">3장 · 말년</button>
+      </div>
+      <div class="chapter-banner">
+        <h3 id="chapterTitle">제1장 · 뿌리</h3>
+        <p id="chapterBlurb"></p>
+      </div>
+      <div class="reader">
+        <div class="reader-topbar">
+          <span class="page-count" id="pageCount">1 / 10</span>
+          <div class="dots" id="dots"></div>
+        </div>
+        <div class="stage-wrap" id="stageWrap">
+          <button type="button" class="tap-zone left" id="tapPrev" aria-label="이전 컷"></button>
+          <button type="button" class="tap-zone right" id="tapNext" aria-label="다음 컷"></button>
+          <div class="panel-stage" id="panelStage"></div>
+        </div>
+        <div class="narration" id="narration"></div>
+        <div class="reader-controls">
+          <button type="button" class="nav-btn" id="prevBtn">◀ 이전 컷</button>
+          <button type="button" class="nav-btn primary" id="nextBtn">다음 컷 ▶</button>
+        </div>
+        <p class="swipe-hint">화면을 좌우로 넘기거나 ← → 키를 눌러도 넘어가요</p>
+      </div>
+    </section>
+
+    <footer>사주 만화는 전통 명리학 이론(오행·십성·억부용신)을 단순화하여 재미로 구성한 콘텐츠입니다. 인생의 중요한 결정은 스스로의 판단을 따르세요.</footer>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- 명리 계산 엔진 ---------------- */
+var STEMS=['갑','을','병','정','무','기','경','신','임','계'];
+var STEM_H=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+var STEM_ELEM=['목','목','화','화','토','토','금','금','수','수'];
+var BRANCHES=['자','축','인','묘','진','사','오','미','신','유','술','해'];
+var BRANCH_H=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+var BRANCH_ELEM=['수','토','목','목','토','화','화','토','금','금','토','수'];
+var GEN={'목':'화','화':'토','토':'금','금':'수','수':'목'};
+var CTRL={'목':'토','토':'수','수':'화','화':'금','금':'목'};
+var ELEM_COLOR_VAR={'목':'--wood','화':'--fire','토':'--earth','금':'--metal','수':'--water'};
+var ELEM_HAN={'목':'木','화':'火','토':'土','금':'金','수':'水'};
+
+function isYang(i){return i%2===0;}
+
+function utcDays(y,m,d){return Math.floor(Date.UTC(y,m-1,d)/86400000);}
+
+function dayPillarIndex(y,m,d,hour){
+  var yy=y,mm=m,dd=d;
+  if(hour>=23){ // 야자시: 23시 이후는 다음날 일주로 계산
+    var nd=new Date(Date.UTC(y,m-1,d+1));
+    yy=nd.getUTCFullYear(); mm=nd.getUTCMonth()+1; dd=nd.getUTCDate();
+  }
+  var anchor=utcDays(1900,1,31); // 1900-01-31 = 갑진일(index 40)
+  var diff=utcDays(yy,mm,dd)-anchor;
+  var idx=((diff%60)+60)%60;
+  idx=(idx+40)%60;
+  return idx;
+}
+
+// 절기 근사 컷오프: [월] -> {cut: 그 날부터의 지지index, before: 그 전날까지의 지지index}
+var MONTH_TABLE={
+  1:{cut:5, at:1, before:0}, 2:{cut:4, at:2, before:1}, 3:{cut:6, at:3, before:2},
+  4:{cut:5, at:4, before:3}, 5:{cut:6, at:5, before:4}, 6:{cut:6, at:6, before:5},
+  7:{cut:7, at:7, before:6}, 8:{cut:8, at:8, before:7}, 9:{cut:8, at:9, before:8},
+  10:{cut:8, at:10, before:9}, 11:{cut:7, at:11, before:10}, 12:{cut:7, at:0, before:11}
+};
+
+function yearForSaju(y,m,d){
+  // 입춘(대략 2/4) 이전 출생은 전년도 사주년으로 계산
+  if(m<2 || (m===2 && d<4)) return y-1;
+  return y;
+}
+
+function monthBranchIndex(y,m,d){
+  var t=MONTH_TABLE[m];
+  return d>=t.cut ? t.at : t.before;
+}
+
+function hourBranchIndex(hour){
+  if(hour>=23||hour<1) return 0; // 자
+  return Math.floor((hour+1)/2)%12;
+}
+
+function computeSaju(dateStr,timeStr){
+  var parts=dateStr.split('-').map(Number);
+  var y=parts[0],m=parts[1],d=parts[2];
+  var tparts=(timeStr||'12:00').split(':').map(Number);
+  var hour=tparts[0], minute=tparts[1]||0;
+
+  var dIdx=dayPillarIndex(y,m,d,hour);
+  var dayStem=dIdx%10, dayBranch=dIdx%12;
+
+  var sajuY=yearForSaju(y,m,d);
+  var yIdx=(((sajuY-1984)%60)+60)%60;
+  var yearStem=yIdx%10, yearBranch=yIdx%12;
+
+  var mBranch=monthBranchIndex(y,m,d);
+  var monthStemStartTable=[2,4,6,8,0];
+  var monthStemStart=monthStemStartTable[yearStem%5];
+  var branchOffsetFromIn=((mBranch-2)+12)%12;
+  var monthStem=(monthStemStart+branchOffsetFromIn)%10;
+
+  var hBranch=hourBranchIndex(hour);
+  var hourStemStartTable=[0,2,4,6,8];
+  var hourStemStart=hourStemStartTable[dayStem%5];
+  var hourStem=(hourStemStart+hBranch)%10;
+
+  return {
+    year:{stem:yearStem, branch:yearBranch},
+    month:{stem:monthStem, branch:mBranch},
+    day:{stem:dayStem, branch:dayBranch},
+    hour:{stem:hourStem, branch:hBranch}
+  };
+}
+
+function tenGodOf(dmStemIdx, targetElem, targetYang){
+  var dmElem=STEM_ELEM[dmStemIdx];
+  var dmYang=isYang(dmStemIdx);
+  var sameParity=(dmYang===targetYang);
+  if(dmElem===targetElem) return sameParity? '비견':'겁재';
+  if(GEN[dmElem]===targetElem) return sameParity? '식신':'상관';
+  if(GEN[targetElem]===dmElem) return sameParity? '편인':'정인';
+  if(CTRL[dmElem]===targetElem) return sameParity? '편재':'정재';
+  if(CTRL[targetElem]===dmElem) return sameParity? '편관':'정관';
+  return '비견';
+}
+
+var GOD_GROUP={'비견':'비겁','겁재':'비겁','식신':'식상','상관':'식상','편재':'재성','정재':'재성','편관':'관성','정관':'관성','편인':'인성','정인':'인성'};
+
+function analyze(pillars){
+  var dmStem=pillars.day.stem;
+  var dmElem=STEM_ELEM[dmStem];
+  var targets=[
+    {elem:STEM_ELEM[pillars.year.stem], yang:isYang(pillars.year.stem), kind:'stem'},
+    {elem:BRANCH_ELEM[pillars.year.branch], yang:isYang(pillars.year.branch), kind:'branch'},
+    {elem:STEM_ELEM[pillars.month.stem], yang:isYang(pillars.month.stem), kind:'stem'},
+    {elem:BRANCH_ELEM[pillars.month.branch], yang:isYang(pillars.month.branch), kind:'branch'},
+    {elem:BRANCH_ELEM[pillars.day.branch], yang:isYang(pillars.day.branch), kind:'branch'},
+    {elem:STEM_ELEM[pillars.hour.stem], yang:isYang(pillars.hour.stem), kind:'stem'},
+    {elem:BRANCH_ELEM[pillars.hour.branch], yang:isYang(pillars.hour.branch), kind:'branch'}
+  ];
+  var groupCount={'비겁':0,'식상':0,'재성':0,'관성':0,'인성':0};
+  var elemCount={'목':0,'화':0,'토':0,'금':0,'수':0};
+  elemCount[dmElem]++; // 일간 본인 포함
+  targets.forEach(function(t){
+    var god=tenGodOf(dmStem,t.elem,t.yang);
+    groupCount[GOD_GROUP[god]]++;
+    elemCount[t.elem]++;
+  });
+  var support=groupCount['비겁']+groupCount['인성'];
+  var drain=groupCount['식상']+groupCount['재성']+groupCount['관성'];
+  var strong= support>=drain;
+
+  var genOf=null, ctrlOf=null;
+  Object.keys(GEN).forEach(function(k){ if(GEN[k]===dmElem) genOf=k; });
+  Object.keys(CTRL).forEach(function(k){ if(CTRL[k]===dmElem) ctrlOf=k; });
+  var dmControls=CTRL[dmElem];
+
+  var yongsinElem, yongsinReason;
+  if(strong){
+    yongsinElem=dmControls;
+    yongsinReason='일간(본인)의 기운이 강한 신강(身强) 사주예요. 넘치는 힘을 현실적으로 풀어낼 '+yongsinElem+'(재성) 기운을 용신으로 써서 균형을 잡으면 좋아요.';
+  }else{
+    yongsinElem=genOf;
+    yongsinReason='일간(본인)의 기운이 아직 여린 신약(身弱) 사주예요. 나를 채워주는 '+yongsinElem+'(인성) 기운을 용신으로 삼아 힘을 보태면 좋아요.';
+  }
+
+  var dominant='비겁'; var max=-1;
+  Object.keys(groupCount).forEach(function(k){ if(groupCount[k]>max){max=groupCount[k]; dominant=k;} });
+
+  return {groupCount:groupCount, elemCount:elemCount, strong:strong, yongsinElem:yongsinElem, yongsinReason:yongsinReason, dominant:dominant, dmElem:dmElem};
+}
+
+/* ---------------- 콘텐츠 사전 ---------------- */
+var ELEMENT_INFO={
+  '목':{color:'청록색', season:'봄', keyword:'성장과 확장'},
+  '화':{color:'다홍색', season:'여름', keyword:'열정과 표현'},
+  '토':{color:'황금색', season:'환절기', keyword:'중재와 안정'},
+  '금':{color:'백색·은색', season:'가을', keyword:'결단과 원칙'},
+  '수':{color:'검정·남색', season:'겨울', keyword:'지혜와 유연함'}
+};
+
+var CATEGORY_INFO={
+  '비겁':{
+    strengths:['강한 자기 주관과 뚝심','위기 속에서도 흔들리지 않는 실행력','동료들을 자연스럽게 이끄는 리더십'],
+    careers:['창업·자영업','스포츠·군경 계열','영업 리더','프리랜서 전문직'],
+    relation:'동등한 파트너십을 선호하고, 서로의 독립성을 지켜주는 관계에서 편안함을 느껴요. 친구 같은 연인이 잘 맞고, 나를 통제하려는 상대와는 오래가기 어려워요.'
+  },
+  '식상':{
+    strengths:['풍부한 표현력과 아이디어','틀에 갇히지 않는 창의성','사람들을 즐겁게 만드는 재주'],
+    careers:['기획·콘텐츠 제작','예술·디자인','교육·강연','요리·엔터테인먼트'],
+    relation:'감정 표현이 솔직하고 다정한 편이라 연애할 때 애정 표현이 풍부해요. 대화가 잘 통하고 함께 웃을 수 있는 상대를 만나면 관계가 오래 지속돼요.'
+  },
+  '재성':{
+    strengths:['현실 감각과 계산력','성과를 숫자로 만들어내는 실행력','목표를 향해 꾸준히 나아가는 끈기'],
+    careers:['재무·회계','영업·유통','사업 경영','부동산·투자'],
+    relation:'실속있고 안정 지향적인 연애를 선호해요. 함께 미래를 계획할 수 있는, 현실적인 대화가 통하는 상대와 특히 잘 맞아요.'
+  },
+  '관성':{
+    strengths:['책임감과 원칙을 지키는 신뢰감','조직을 안정적으로 운영하는 관리 능력','맡은 일을 끝까지 해내는 성실함'],
+    careers:['공무원·공공기관','법조·행정','대기업 관리직','조직 운영·인사'],
+    relation:'책임감 있고 신뢰를 중시하는 관계를 만들어가요. 가정적이고 전통적인 형태의 안정된 관계를 선호하며, 약속을 지키는 상대에게 마음을 열어요.'
+  },
+  '인성':{
+    strengths:['깊이 있는 사고와 통찰력','배우고 연구하는 것을 즐기는 학습력','타인의 이야기를 잘 들어주는 배려심'],
+    careers:['학문·연구직','교육·상담','기획·문서 업무','출판·저술'],
+    relation:'정신적 교감과 대화의 깊이를 중요하게 여겨요. 나를 이해해주고 조언을 나눌 수 있는 상대, 서로 성장하는 관계에서 만족을 느껴요.'
+  }
+};
+
+/* 배우자성: 전통 명리학에서는 남자는 재성, 여자는 관성을 배우자를 나타내는 별로 봐요(재미로 보는 전통 해석). */
+var SPOUSE_PERSONALITY={
+  '재성':'현실 감각이 뛰어나고 생활력이 강한, 살림을 든든하게 챙기는 사람일 확률이 높아요.',
+  '관성':'책임감 있고 신뢰를 주는, 안정적으로 곁을 지켜주는 사람일 확률이 높아요.'
+};
+var ADVICE_HEADLINE={'목':'뻗어나가는 나무처럼','화':'타오르는 불꽃처럼','토':'든든한 대지처럼','금':'벼려낸 칼날처럼','수':'흐르는 물처럼'};
+
+/* ---------------- 화면 렌더링 ---------------- */
+var gender='female';
+document.querySelectorAll('.gender-toggle button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.gender-toggle button').forEach(function(b){b.setAttribute('aria-pressed','false');});
+    btn.setAttribute('aria-pressed','true');
+    gender=btn.dataset.gender;
+  });
+});
+
+var cssVal=getComputedStyle(document.documentElement);
+function elemColor(elem){ return cssVal.getPropertyValue(ELEM_COLOR_VAR[elem]).trim() || '#e3b559'; }
+
+function renderPillars(p){
+  var order=[
+    {key:'year',label:'년주 · 초년'},
+    {key:'month',label:'월주 · 청년'},
+    {key:'day',label:'일주 · 본인'},
+    {key:'hour',label:'시주 · 말년'}
+  ];
+  var html='';
+  order.forEach(function(o){
+    var pl=p[o.key];
+    var sElem=STEM_ELEM[pl.stem], bElem=BRANCH_ELEM[pl.branch];
+    html+='<div class="pillar">'+
+      '<div class="role">'+o.label+'</div>'+
+      '<div class="han"><span class="stem-dot" style="background:'+elemColor(sElem)+'"></span>'+STEM_H[pl.stem]+'</div>'+
+      '<div class="han"><span class="branch-dot" style="background:'+elemColor(bElem)+'"></span>'+BRANCH_H[pl.branch]+'</div>'+
+      '<div class="kor">'+STEMS[pl.stem]+STEM_ELEM[pl.stem]+' · '+BRANCHES[pl.branch]+BRANCH_ELEM[pl.branch]+'</div>'+
+      '</div>';
+  });
+  document.getElementById('pillars').innerHTML=html;
+}
+
+function renderYongsin(a){
+  var elem=a.yongsinElem;
+  document.getElementById('yongsinBadge').textContent=ELEM_HAN[elem];
+  document.getElementById('yongsinBadge').style.background=elemColor(elem);
+  document.getElementById('yongsinText').textContent=a.yongsinReason;
+  var info=ELEMENT_INFO[elem];
+  document.getElementById('yongsinChips').innerHTML=
+    '<span class="chip">행운의 색 · '+info.color+'</span>'+
+    '<span class="chip">기운의 계절 · '+info.season+'</span>'+
+    '<span class="chip">키워드 · '+info.keyword+'</span>'+
+    '<span class="chip">'+(a.strong?'신강':'신약')+' 사주</span>';
+}
+
+function renderStats(a){
+  var order=['비겁','식상','재성','관성','인성'];
+  var max=Math.max.apply(null, order.map(function(k){return a.groupCount[k];})) || 1;
+  var elemFor={'비겁':a.dmElem,'식상':GEN[a.dmElem],'재성':CTRL[a.dmElem],'관성':null,'인성':null};
+  Object.keys(GEN).forEach(function(k){ if(GEN[k]===a.dmElem) elemFor['인성']=k; });
+  Object.keys(CTRL).forEach(function(k){ if(CTRL[k]===a.dmElem) elemFor['관성']=k; });
+  var html='';
+  order.forEach(function(k){
+    var c=a.groupCount[k];
+    var pct= max? Math.round((c/7)*100):0;
+    html+='<div class="stat-row">'+
+      '<div class="label">'+k+'</div>'+
+      '<div class="stat-track"><div class="stat-fill" data-w="'+pct+'" style="background:'+elemColor(elemFor[k])+'"></div></div>'+
+      '<div class="count">'+c+'</div>'+
+      '</div>';
+  });
+  document.getElementById('statBars').innerHTML=html;
+  requestAnimationFrame(function(){
+    document.querySelectorAll('.stat-fill').forEach(function(el){ el.style.width=el.dataset.w+'%'; });
+  });
+}
+
+function renderRadar(a){
+  var order=['목','화','토','금','수'];
+  var max=Math.max.apply(null, order.map(function(k){return a.elemCount[k];})) || 1;
+  var cx=120, cy=105, R=78;
+  var pts=order.map(function(k,i){
+    var ang=-Math.PI/2 + i*(2*Math.PI/5);
+    var r=R * (0.25 + 0.75*(a.elemCount[k]/max));
+    return [cx+r*Math.cos(ang), cy+r*Math.sin(ang)];
+  });
+  var ring=[0.33,0.66,1].map(function(f){
+    return order.map(function(k,i){
+      var ang=-Math.PI/2 + i*(2*Math.PI/5);
+      return (cx+R*f*Math.cos(ang))+','+(cy+R*f*Math.sin(ang));
+    }).join(' ');
+  });
+  var svg='';
+  ring.forEach(function(pnts){ svg+='<polygon points="'+pnts+'" fill="none" stroke="var(--line)" stroke-width="1"/>'; });
+  order.forEach(function(k,i){
+    var ang=-Math.PI/2 + i*(2*Math.PI/5);
+    var lx=cx+(R+22)*Math.cos(ang), ly=cy+(R+22)*Math.sin(ang);
+    svg+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="var(--fg-dim)">'+k+'</text>';
+  });
+  var poly=pts.map(function(p){return p[0]+','+p[1];}).join(' ');
+  svg+='<polygon points="'+poly+'" fill="var(--accent)" fill-opacity="0.28" stroke="var(--accent)" stroke-width="2"/>';
+  pts.forEach(function(p,i){
+    svg+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="'+elemColor(order[i])+'"/>';
+  });
+  document.getElementById('elemRadar').innerHTML=svg;
+
+  var legendHtml='';
+  order.forEach(function(k){
+    legendHtml+='<div class="row"><span class="dot" style="background:'+elemColor(k)+'"></span>'+k+' · '+a.elemCount[k]+'개</div>';
+  });
+  document.getElementById('elemLegend').innerHTML=legendHtml;
+}
+
+function renderCards(a){
+  var info=CATEGORY_INFO[a.dominant];
+  document.getElementById('strengthList').innerHTML=info.strengths.map(function(s){return '<li>'+s+'</li>';}).join('');
+  document.getElementById('careerChips').innerHTML=info.careers.map(function(c){return '<span class="chip">'+c+'</span>';}).join('');
+  document.getElementById('relationText').textContent=info.relation;
+}
+
+function renderAdvice(ctx){
+  document.getElementById('adviceHeadline').textContent=ADVICE_HEADLINE[ctx.yongsinElem];
+  document.getElementById('adviceBody').textContent=
+    '당신의 승부수는 '+ctx.yongsinElem+'의 기운입니다. 인생이 막막할 때일수록 '+ELEMENT_INFO[ctx.yongsinElem].keyword+'을(를) 향해 움직이세요. '+
+    ctx.challengeElem+'의 압박이 커질 때는 잠시 멈추고 '+ctx.domInfo.strengths[0]+'을(를) 떠올리세요 — 그것이 당신을 다시 일으켜 세울 힘입니다.';
+}
+
+function renderSpouse(ctx){
+  var photo=document.getElementById('spousePhoto');
+  photo.innerHTML=
+    '<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;">'+
+      '<defs><radialGradient id="spouseBg" cx="50%" cy="35%" r="75%">'+
+        '<stop offset="0%" stop-color="#fdf1de"/><stop offset="100%" stop-color="#cbb28c"/>'+
+      '</radialGradient></defs>'+
+      '<rect width="200" height="200" fill="url(#spouseBg)"/>'+
+    '</svg>'+
+    '<svg viewBox="0 0 100 130" preserveAspectRatio="xMidYMax meet" style="position:absolute;inset:8% 18% 0;width:64%;height:92%;">'+
+      charSVG('calm', elemColor(ctx.spouseElem), false, 'sp', ctx.partnerGender)+
+    '</svg>';
+  document.getElementById('spouseCaption').textContent=ctx.animalEmoji+' '+ctx.animal+'띠 곁의, '+ctx.dayBranchAnimal+'띠 인연';
+  document.getElementById('spouseChips').innerHTML=
+    '<span class="chip">배우자성 · '+ctx.spouseGodGroup+'</span>'+
+    '<span class="chip">기운 · '+ctx.spouseElem+'('+ELEM_HAN[ctx.spouseElem]+')</span>'+
+    '<span class="chip">키워드 · '+ELEMENT_INFO[ctx.spouseElem].keyword+'</span>';
+  document.getElementById('spouseText').textContent=
+    '배우자궁(일지)의 동물은 '+ctx.dayBranchAnimal+'띠 — '+SPOUSE_PERSONALITY[ctx.spouseGodGroup]+
+    ' 전통 명리학에서는 '+(gender==='male'?'남성':'여성')+'의 배우자를 '+ctx.spouseGodGroup+'으로 보는데, 이 사주에서는 '+ctx.spouseElem+' 기운이 짙어 '+ELEMENT_INFO[ctx.spouseElem].keyword+'을(를) 닮은 인상을 줄 사람이에요. (전통 해석을 재미로 각색한 내용이에요.)';
+}
+
+/* ---------------- 인생 만화 (30컷) ---------------- */
+var BRANCH_ANIMAL=['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+var BRANCH_ANIMAL_EMOJI=['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
+var DOLJABI={'비겁':'마이크','식상':'붓','재성':'돈','관성':'법봉','인성':'책'};
+
+CATEGORY_INFO['비겁'].relShort='동료들과 자연스럽게 어울리며 신뢰를 쌓아갔다.';
+CATEGORY_INFO['식상'].relShort='유쾌한 이야기로 분위기를 밝혔다.';
+CATEGORY_INFO['재성'].relShort='믿음직한 일처리로 신뢰를 얻었다.';
+CATEGORY_INFO['관성'].relShort='맡은 역할을 묵묵히 해내며 인정받았다.';
+CATEGORY_INFO['인성'].relShort='진심 어린 조언으로 곁을 지켰다.';
+
+function buildContext(a,p,birthYear){
+  var challengeElem=null;
+  Object.keys(CTRL).forEach(function(k){ if(CTRL[k]===a.dmElem) challengeElem=k; });
+  var yi=p.year.branch, di=p.day.branch;
+  var spouseGodGroup = gender==='male'? '재성' : '관성';
+  var spouseElem = gender==='male'? CTRL[a.dmElem] : challengeElem;
+  var partnerGender = gender==='female'? 'male' : 'female';
+  return {
+    year:{stemHan:STEM_H[p.year.stem], branchHan:BRANCH_H[p.year.branch]},
+    month:{stemHan:STEM_H[p.month.stem], branchHan:BRANCH_H[p.month.branch]},
+    day:{stemHan:STEM_H[p.day.stem], branchHan:BRANCH_H[p.day.branch]},
+    hour:{stemHan:STEM_H[p.hour.stem], branchHan:BRANCH_H[p.hour.branch]},
+    dayHan:STEM_H[p.day.stem]+BRANCH_H[p.day.branch],
+    animal:BRANCH_ANIMAL[yi], animalEmoji:BRANCH_ANIMAL_EMOJI[yi],
+    dayBranchAnimal:BRANCH_ANIMAL[di],
+    dmElem:a.dmElem, dmElemHan:ELEM_HAN[a.dmElem],
+    yongsinElem:a.yongsinElem, challengeElem:challengeElem,
+    dominant:a.dominant, domInfo:CATEGORY_INFO[a.dominant],
+    careers0:CATEGORY_INFO[a.dominant].careers[0],
+    doljabi:DOLJABI[a.dominant],
+    spouseGodGroup:spouseGodGroup, spouseElem:spouseElem, partnerGender:partnerGender,
+    birthYear:birthYear
+  };
+}
+
+var MOOD_POSE={calm:'calm',curious:'reach',warm:'idle',tense:'brace',shadow:'slump',triumph:'cheer',joy:'cheer',wise:'calm',peaceful:'calm',epic:'shout'};
+var POSES={
+  idle:  {L:[32,108], R:[68,108], mouth:'M43,39 Q50,44 57,39', brow:'M41,25 Q46,23 51,25', browR:'M49,25 Q54,23 59,25'},
+  reach: {L:[28,100], R:[86,50],  mouth:'M43,38 Q50,45 57,38', brow:'M40,23 Q46,20 52,23', browR:'M48,23 Q54,20 60,23'},
+  brace: {L:[46,84],  R:[54,84],  mouth:'M44,40 L56,40',       brow:'M40,27 Q46,25 52,26', browR:'M48,26 Q54,25 60,27'},
+  slump: {L:[30,112], R:[70,112], mouth:'M44,43 Q50,39 56,43', brow:'M40,28 Q46,29 52,28', browR:'M48,28 Q54,29 60,28', headTilt:10},
+  calm:  {L:[42,90],  R:[58,90],  mouth:'M44,40 Q50,43 56,40', brow:'M41,25 Q46,23 51,25', browR:'M49,25 Q54,23 59,25'},
+  cheer: {L:[18,40],  R:[82,40],  mouth:'M40,37 Q50,50 60,37', brow:'M39,22 Q46,18 53,22', browR:'M47,22 Q54,18 61,22'},
+  shout: {L:[30,100], R:[92,60],  mouth:'M45,38 Q50,48 55,38', brow:'M39,24 Q46,19 53,24', browR:'M47,24 Q54,19 61,24'}
+};
+
+/* ---------------- 배경 씬 (오행/무드별 일러스트) ---------------- */
+function rnd(seed){ var x=Math.sin(seed*12.9898)*43758.5453; return x-Math.floor(x); }
+var MTN_PATHS=[
+  'M0,300 L0,250 L45,220 L90,245 L140,205 L190,235 L245,215 L300,240 L300,300 Z',
+  'M0,300 L0,240 L55,255 L105,205 L160,230 L205,195 L255,225 L300,210 L300,300 Z',
+  'M0,300 L0,260 L50,230 L95,250 L150,215 L200,245 L250,220 L300,250 L300,300 Z'
+];
+function starsSVG(seed,color,count){
+  var s='';
+  for(var i=0;i<count;i++){
+    var x=(rnd(seed*7.1+i*3.3)*280+10).toFixed(1);
+    var y=(rnd(seed*13.7+i*5.9)*170+8).toFixed(1);
+    var r=(1+rnd(seed+i*2.2)*1.7).toFixed(1);
+    var op=(0.45+rnd(i*1.7+seed)*0.5).toFixed(2);
+    s+='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+color+'" opacity="'+op+'"/>';
+  }
+  s+='<circle cx="235" cy="55" r="24" fill="'+color+'" opacity="0.9"/><circle cx="245" cy="46" r="22" fill="#14121c" opacity="0.4"/>';
+  return s;
+}
+function sunSVG(color){
+  return '<defs><radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">'+
+      '<stop offset="0%" stop-color="'+color+'" stop-opacity="1"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/>'+
+    '</radialGradient></defs>'+
+    '<circle cx="228" cy="68" r="66" fill="url(#sunGlow)"/><circle cx="228" cy="68" r="28" fill="'+color+'"/>'+
+    '<ellipse cx="70" cy="90" rx="52" ry="16" fill="#fff" opacity="0.45"/>'+
+    '<ellipse cx="112" cy="72" rx="38" ry="13" fill="#fff" opacity="0.35"/>';
+}
+function sunburstSVG(color){
+  var rays='';
+  for(var i=0;i<12;i++){
+    rays+='<rect x="147" y="-40" width="6" height="220" fill="'+color+'" opacity="0.3" transform="rotate('+(i*30)+' 150 150)"/>';
+  }
+  return '<defs><radialGradient id="burstCore" cx="50%" cy="35%" r="60%">'+
+      '<stop offset="0%" stop-color="#fff7d6" stop-opacity="0.9"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/>'+
+    '</radialGradient></defs>'+rays+'<circle cx="150" cy="110" r="90" fill="url(#burstCore)"/>';
+}
+function stormSVG(seed){
+  var rain='';
+  for(var i=0;i<9;i++){
+    var x=(18+i*30+rnd(seed+i)*10).toFixed(1);
+    rain+='<line x1="'+x+'" y1="0" x2="'+(x-16)+'" y2="86" stroke="rgba(255,255,255,.16)" stroke-width="2"/>';
+  }
+  return '<ellipse cx="90" cy="52" rx="82" ry="30" fill="rgba(18,18,32,.55)"/>'+
+    '<ellipse cx="215" cy="38" rx="72" ry="26" fill="rgba(18,18,32,.5)"/>'+rain+
+    '<path d="M172,58 L150,120 L173,120 L146,192" stroke="#ffe98a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+}
+function confettiSVG(seed,colors){
+  var s='';
+  for(var i=0;i<16;i++){
+    var x=(rnd(seed*3.3+i)*280+10).toFixed(1), y=(rnd(seed*5.1+i*2)*250+10).toFixed(1);
+    var rot=(rnd(seed+i)*360).toFixed(0);
+    s+='<rect x="'+x+'" y="'+y+'" width="7" height="14" rx="2" fill="'+colors[i%colors.length]+'" opacity="0.85" transform="rotate('+rot+' '+x+' '+y+')"/>';
+  }
+  return s;
+}
+function auroraSVG(){
+  return '<path d="M0,120 Q75,60 150,110 T300,90 L300,0 L0,0 Z" fill="rgba(255,140,200,.25)"/>'+
+    '<path d="M0,160 Q75,100 150,150 T300,130 L300,0 L0,0 Z" fill="rgba(140,180,255,.2)"/>'+
+    sunburstSVG('#ffb26b');
+}
+function birdsSVG(){
+  var s='', pts=[[60,68],[92,52],[122,72]];
+  pts.forEach(function(p){
+    s+='<path d="M'+(p[0]-10)+','+p[1]+' Q'+p[0]+','+(p[1]-8)+' '+(p[0]+10)+','+p[1]+' Q'+p[0]+','+(p[1]-4)+' '+(p[0]-10)+','+p[1]+'" fill="rgba(40,25,35,.6)"/>';
+  });
+  return s;
+}
+function skylineSVG(seed,color){
+  var specs=[
+    {x:-5,w:44,h:120},{x:38,w:34,h:85},{x:70,w:52,h:155},{x:120,w:32,h:95},
+    {x:150,w:48,h:135},{x:196,w:36,h:90},{x:230,w:46,h:145},{x:274,w:32,h:75}
+  ];
+  var s='';
+  specs.forEach(function(b,i){
+    var y=300-b.h;
+    s+='<rect x="'+b.x+'" y="'+y+'" width="'+b.w+'" height="'+(b.h+10)+'" fill="'+color+'" opacity="0.62"/>';
+    var rows=Math.floor(b.h/22), cols=Math.max(1,Math.floor(b.w/16));
+    for(var r=0;r<rows;r++){
+      for(var c=0;c<cols;c++){
+        if(rnd(seed+i*3.1+r*2.3+c*1.7)>0.45){
+          s+='<rect x="'+(b.x+6+c*14)+'" y="'+(y+10+r*18)+'" width="6" height="8" fill="#ffe28a" opacity="0.6"/>';
+        }
+      }
+    }
+  });
+  return s;
+}
+var SCENE_PALETTE={
+  calm:    {top:'#243447', bottom:'#4f7d86', mtn:'#16222c', decor:'stars', starColor:'#dfe9f5'},
+  curious: {top:'#ffd9a0', bottom:'#ff9463', mtn:'#7a3d2e', decor:'sun',   sunColor:'#fff3c4'},
+  warm:    {top:'#ffcf86', bottom:'#ff7a52', mtn:'#7a3520', decor:'sunrays', sunColor:'#ffdf9e'},
+  tense:   {top:'#252a3d', bottom:'#4d5170', mtn:'#14161f', decor:'storm'},
+  shadow:  {top:'#120f1a', bottom:'#332740', mtn:'#0a0810', decor:'stars', starColor:'#8f83c9'},
+  triumph: {top:'#ffe28f', bottom:'#ff7a3d', mtn:'#7a3010', decor:'sunrays', sunColor:'#fff3c4'},
+  joy:     {top:'#ffd3ea', bottom:'#ff8fc4', mtn:'#7a3a5c', decor:'confetti', confettiColors:['#ffffff','#ffd76b','#7fd6c9','#ff9ecf']},
+  wise:    {top:'#0e1a3d', bottom:'#33418f', mtn:'#080d22', decor:'stars', starColor:'#cfe0ff'},
+  peaceful:{top:'#ffb49c', bottom:'#d989ab', mtn:'#5c3550', decor:'birds'},
+  epic:    {top:'#2c1040', bottom:'#ff5f6d', mtn:'#160a26', decor:'aurora'}
+};
+function sceneSVG(mood, seed, city){
+  var pal=SCENE_PALETTE[mood];
+  var decor='';
+  if(pal.decor==='stars') decor=starsSVG(seed, pal.starColor, 16);
+  else if(pal.decor==='sun') decor=sunSVG(pal.sunColor);
+  else if(pal.decor==='sunrays') decor=sunburstSVG(pal.sunColor);
+  else if(pal.decor==='storm') decor=stormSVG(seed);
+  else if(pal.decor==='confetti') decor=confettiSVG(seed, pal.confettiColors);
+  else if(pal.decor==='birds') decor=birdsSVG();
+  else if(pal.decor==='aurora') decor=auroraSVG();
+  var ground = city? skylineSVG(seed, pal.mtn) : '<path d="'+MTN_PATHS[seed%3]+'" fill="'+pal.mtn+'" opacity="0.55"/>';
+  return '<svg class="scene-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><linearGradient id="sky'+seed+'" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0%" stop-color="'+pal.top+'"/><stop offset="100%" stop-color="'+pal.bottom+'"/>'+
+    '</linearGradient></defs>'+
+    '<rect width="300" height="300" fill="url(#sky'+seed+')"/>'+
+    decor+
+    ground+
+  '</svg>';
+}
+
+/* ---------------- 캐릭터 일러스트 ---------------- */
+var INK='#15110c';
+function charSVG(pose,color,old,uid,genderOverride){
+  var g = genderOverride||gender;
+  var pd=POSES[pose]||POSES.idle;
+  var tilt=pd.headTilt||0;
+  var hairColor= old? '#c9c6c0':'#2c2418';
+  var hairHi = old? '#f2f0ec':'#5c4a34';
+  var skin='#f6ddba', skinShade='#e3bd93';
+  var gid='hero'+uid;
+  var hair = g==='female'
+    ? '<path d="M27 24 Q50 -4 73 24 L74 39 Q68 24 60 30 Q65 18 50 14 Q35 18 40 30 Q32 24 26 39 Z" fill="'+hairColor+'" stroke="'+INK+'" stroke-width="1.3" stroke-linejoin="round"/>'+
+      '<path d="M31 18 Q42 6 52 10" stroke="'+hairHi+'" stroke-width="1.8" fill="none" opacity="0.6" stroke-linecap="round"/>'
+    : '<path d="M30 23 Q50 3 70 23 L69 33 Q64 19 57 25 Q60 15 50 13 Q40 15 43 25 Q36 19 31 33 Z" fill="'+hairColor+'" stroke="'+INK+'" stroke-width="1.3" stroke-linejoin="round"/>'+
+      '<path d="M36 18 Q46 9 55 12" stroke="'+hairHi+'" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>';
+  var cane = old? '<line x1="76" y1="86" x2="76" y2="116" stroke="#8a6a3f" stroke-width="3" stroke-linecap="round"/><ellipse cx="76" cy="117" rx="5" ry="2" fill="rgba(0,0,0,.15)"/>' : '';
+  var blush = '<ellipse cx="40" cy="37" rx="4" ry="2.2" fill="#ff9d8a" opacity="0.38"/><ellipse cx="60" cy="37" rx="4" ry="2.2" fill="#ff9d8a" opacity="0.38"/>';
+  var eyeL = '<g><path d="M38.5,29 Q43,26.5 47.5,29 Q43,32.8 38.5,29 Z" fill="#fff" stroke="'+INK+'" stroke-width="1" stroke-linejoin="round"/>'+
+      '<circle cx="43.4" cy="29.4" r="2.5" fill="#3b2c1f"/><circle cx="42.4" cy="28.3" r="0.9" fill="#fff"/><circle cx="44.3" cy="30.4" r="0.5" fill="#fff" opacity="0.8"/>'+
+      '<path d="M39,27.3 L37,26" stroke="'+INK+'" stroke-width="1" stroke-linecap="round"/></g>';
+  var eyeR = '<g><path d="M52.5,29 Q57,26.5 61.5,29 Q57,32.8 52.5,29 Z" fill="#fff" stroke="'+INK+'" stroke-width="1" stroke-linejoin="round"/>'+
+      '<circle cx="56.6" cy="29.4" r="2.5" fill="#3b2c1f"/><circle cx="55.6" cy="28.3" r="0.9" fill="#fff"/><circle cx="57.5" cy="30.4" r="0.5" fill="#fff" opacity="0.8"/>'+
+      '<path d="M61,27.3 L63,26" stroke="'+INK+'" stroke-width="1" stroke-linecap="round"/></g>';
+  var badge = '<path d="M50,80.5 L52.3,84 L50,87.5 L47.7,84 Z" fill="#e3b559" stroke="'+INK+'" stroke-width="1"/>';
+  return ''+
+    '<defs>'+
+      '<linearGradient id="'+gid+'" x1="0" y1="0" x2="0.3" y2="1">'+
+        '<stop offset="0%" stop-color="'+color+'"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.7"/>'+
+      '</linearGradient>'+
+    '</defs>'+
+    '<ellipse cx="50" cy="120" rx="27" ry="6" fill="rgba(0,0,0,.2)"/>'+
+    '<path d="M32 78 Q50 64 68 78 L75 120 L25 120 Z" fill="url(#'+gid+')" stroke="'+INK+'" stroke-width="1.6" stroke-linejoin="round"/>'+
+    '<path d="M32 78 Q50 70 68 78 L66 85 Q50 77 34 85 Z" fill="rgba(0,0,0,.12)"/>'+
+    '<path d="M44,78 L50,86 L56,78" fill="none" stroke="'+INK+'" stroke-width="1.3" stroke-linejoin="round"/>'+
+    badge+
+    '<line x1="35" y1="76" x2="'+pd.L[0]+'" y2="'+pd.L[1]+'" stroke="'+skin+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<line x1="65" y1="76" x2="'+pd.R[0]+'" y2="'+pd.R[1]+'" stroke="'+skin+'" stroke-width="8" stroke-linecap="round"/>'+
+    '<g transform="rotate('+tilt+' 50 30)">'+
+      '<circle cx="50" cy="30" r="18" fill="'+skin+'" stroke="'+INK+'" stroke-width="1.4"/>'+
+      '<path d="M32,35 Q50,45 68,35 L68,41 Q50,49 32,41 Z" fill="'+skinShade+'" opacity="0.5"/>'+
+      hair+blush+
+      '<path d="'+pd.brow+'" stroke="'+INK+'" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+      '<path d="'+pd.browR+'" stroke="'+INK+'" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+      eyeL+eyeR+
+      '<path d="M50,33 Q49.3,35 50.3,36" stroke="#d9a978" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.6"/>'+
+      '<path d="'+pd.mouth+'" stroke="#a8623f" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+    '</g>'+
+    cane;
+}
+
+/* 30 beats(장당 10컷): a hero's-journey shaped by this chart's own guardian animal (년주 zodiac),
+   shadow force (일간을 극하는 오행 = 관성) and guiding light (용신). */
+var PANEL_COUNT=10;
+var STORY={
+ 0:[ // 제1장 · 뿌리
+  {size:'s', mood:'calm', t:function(c){return c.birthYear+'년, '+c.year.stemHan+c.year.branchHan+' 년주가 울리던 밤 — '+c.animalEmoji+' '+c.animal+'띠 아이의 첫 숨이, 그리고 곁을 지킬 동반자가 함께 태어났다.';}},
+  {size:'n', mood:'curious', t:function(c){return '돌잡이 상 위, 망설임 없이 '+c.doljabi+'을(를) 움켜쥐었다 — 누구도 가르쳐주지 않은 '+c.dmElem+'의 기운.';}},
+  {size:'n', mood:'joy', bubble:'우리 친구 하자!', t:'용기 내어 건넨 한마디, 첫 친구가 생겼다.'},
+  {size:'w', mood:'shadow', shadow:true, sfx:'...', t:function(c){return '처음 겪어보는 실패. '+c.challengeElem+'의 그림자가 스쳐가며, 세상이 온통 흐릿해 보였다.';}},
+  {size:'n', mood:'warm', bubble:'괜찮아.', t:function(c){return c.animalEmoji+'가 다가와 조용히 어깨를 토닥였다. 눈물을 훔치고, 다시 벌떡 일어섰다.';}},
+  {size:'w', mood:'triumph', sfx:'짝짝짝!', t:function(c){return '학예회 무대 위, 온몸이 빛나던 순간 — 선생님도 알아본 '+c.domInfo.strengths[0]+'.';}},
+  {size:'n', mood:'tense', bubble:'나는 누구일까?', t:'질풍노도의 사춘기, 거울 속 자신에게 처음으로 질문을 던졌다.'},
+  {size:'n', mood:'wise', t:function(c){return c.animalEmoji+'가 속삭였다. "네 안엔 이미 '+c.yongsinElem+'의 빛이 있어."';}},
+  {size:'n', mood:'curious', t:function(c){return '"나는 '+c.careers0+'이(가) 되고 싶어." 떨리는 목소리로, 처음 꿈을 말해보았다.';}},
+  {size:'s', mood:'epic', sfx:'두근!', t:'짐을 꾸린 손끝이 떨렸다. 문 앞에 서서 숨을 고르고 — 이제, 세상 속으로. 1장 끝.'}
+ ],
+ 1:[ // 제2장 · 폭풍 속에서
+  {size:'s', mood:'curious', city:true, t:function(c){return '월주 '+c.month.stemHan+c.month.branchHan+'의 시간, 낯선 도시의 첫 아침 — 빳빳한 새 셔츠 한 벌로 사회에 발을 내디뎠다.';}},
+  {size:'n', mood:'warm', city:true, t:function(c){return '동료들 사이에서, '+c.domInfo.relShort;}},
+  {size:'w', mood:'shadow', city:true, shadow:true, sfx:'쿵...', t:function(c){return '첫 실수, 화끈거리는 얼굴. '+c.challengeElem+'의 기운이 발목을 무겁게 붙잡았다.';}},
+  {size:'n', mood:'warm', bubble:'나는 안 되는 걸까?', t:function(c){return '며칠 밤을 뒤척이던 어느 날, '+c.animalEmoji+'가 다시 나타났다 — 잊고 지낸 오랜 벗처럼.';}},
+  {size:'w', mood:'curious', sfx:'슥삭슥삭', t:function(c){return '물러서지 않기로 했다. 밤을 새운 끝에, '+c.domInfo.strengths[1]+'이(가) 조금씩 단단해졌다.';}},
+  {size:'n', mood:'curious', t:function(c){return '큰 프로젝트가 맡겨졌다. "'+c.careers0+'"의 길이 눈앞에 펼쳐졌다.';}},
+  {size:'w', mood:'tense', shadow:true, sfx:'우르릉', t:function(c){return c.challengeElem+'의 먹구름이 짙어졌다 — 가장 어두운 밤, 모든 걸 놓아버리고 싶어졌다.';}},
+  {size:'s', mood:'epic', light:true, sfx:'번쩍!', bubble:'포기하지 마.', t:function(c){return '그 순간, '+c.yongsinElem+'의 빛이 폭포처럼 쏟아졌다. 그 기운을 온몸에 두르고 — 다시 일어섰다.';}},
+  {size:'n', mood:'triumph', sfx:'짜잔!', t:function(c){return '마침내 위기를 넘어, '+c.careers0+'의 자리에 자신의 이름을 새겼다.';}},
+  {size:'s', mood:'peaceful', t:'전율이 등줄기를 타고 흘렀다. 문득 돌아본 길 — 생각보다 훨씬 멀리 와 있었다. 2장 끝.'}
+ ],
+ 2:[ // 제3장 · 결실
+  {size:'s', mood:'peaceful', t:function(c){return '시주 '+c.hour.stemHan+c.hour.branchHan+'의 계절, 노을이 곱게 내려앉았다 — 서두르지 않아도 되는 여유가 비로소 찾아왔다.';}},
+  {size:'w', mood:'wise', bubble:'그 기운을 믿어봐.', t:function(c){return c.animalEmoji+'도 어느새 함께 나이 들어 있었다. 후배의 어깨를 짚으며, 오래 품어온 말을 건넸다.';}},
+  {size:'n', mood:'shadow', shadow:true, t:'작은 고비가 찾아왔다. 예전 같으면 두려웠을 텐데, 이제는 담담히 마주할 수 있었다.'},
+  {size:'w', mood:'wise', light:true, t:function(c){return '돌아보니 '+c.yongsinElem+'의 빛은, 늘 바로 곁에 있었다.';}},
+  {size:'n', mood:'joy', t:'오랜 인연들과 둘러앉은 저녁 식탁, 웃음이 끊이지 않았다.'},
+  {size:'w', mood:'warm', t:function(c){return '그동안 쌓아온 것을 오래도록 바라보다, 다음 세대의 손에 '+c.dmElemHan+'의 씨앗 하나를 쥐여주었다.';}},
+  {size:'n', mood:'wise', t:'별을 보며, 지나온 세 계절을 천천히 되짚어보았다.'},
+  {size:'n', mood:'peaceful', t:function(c){return c.animalEmoji+'와 나란히 앉아 — 말없이도 충분한 시간, 잔잔한 미소가 얼굴에 번졌다.';}},
+  {size:'w', mood:'wise', light:true, t:function(c){return '노을이 저물어가듯 인생의 계절도 저물어간다. '+c.animalEmoji+'와 함께, 별이 되어 하늘로 흩어졌다.';}},
+  {size:'s', mood:'triumph', t:function(c){return c.dayHan+' 일주의 주인공, '+c.dmElem+'의 사람 — 그리고 이야기는, 여전히 계속된다.';}}
+ ]
+};
+var CHAPTERS=[
+  {title:'제1장 · 뿌리', blurb:'년주의 기운 아래 태어나, 재능을 처음 발견하기까지.'},
+  {title:'제2장 · 폭풍 속에서', blurb:'사회로 나아가 시련을 만나고, 용신의 빛으로 다시 일어서기까지.'},
+  {title:'제3장 · 결실', blurb:'쌓아온 것들이 결실을 맺고, 곁을 지켜온 인연과 함께 완성하는 계절.'}
+];
+
+function blobPos(i){ return i%2===0? 'top:-8%;right:-8%;width:75%;height:75%;' : 'bottom:-8%;left:-8%;width:75%;height:75%;'; }
+function sfxPos(i){ return i%3===0? 'top:5%;right:5%;' : (i%3===1? 'top:5%;left:5%;' : 'bottom:24%;right:6%;'); }
+function bubblePos(i){ return i%2===0? 'top:6%;left:6%;' : 'top:6%;right:6%;'; }
+
+var storyCtx=null;
+var currentActIdx=0, currentPanelIdx=0;
+
+function artHTML(def, idx, isOld){
+  var pose=MOOD_POSE[def.mood];
+  var heroColor=elemColor(storyCtx.dmElem);
+  var seed=(currentActIdx+1)*100+idx;
+  var sceneHtml=sceneSVG(def.mood, seed, !!def.city);
+  var svgInner=charSVG(pose,heroColor,isOld,'p'+seed);
+  var shadowHtml = def.shadow ? '<div class="fx-blob shadow-blob" style="background:radial-gradient(circle,'+elemColor(storyCtx.challengeElem)+' 0%, transparent 70%);'+blobPos(idx)+'"></div>' : '';
+  var lightHtml = def.light ? '<div class="fx-blob light-blob" style="background:radial-gradient(circle,'+elemColor(storyCtx.yongsinElem)+' 0%, transparent 70%); top:-10%;left:-10%;width:100%;height:100%;"></div>' : '';
+  var sfxHtml = def.sfx ? '<div class="sfx" style="'+sfxPos(idx)+'">'+def.sfx+'</div>' : '';
+  var bubble = def.bubble ? (typeof def.bubble==='function'? def.bubble(storyCtx): def.bubble) : null;
+  var bubbleHtml = bubble ? '<div class="speech" style="'+bubblePos(idx)+'">'+bubble+'</div>' : '';
+  return sceneHtml+
+    '<div class="panel-num-badge">'+(idx+1)+' / '+PANEL_COUNT+'</div>'+
+    shadowHtml+lightHtml+
+    '<svg class="char-svg" viewBox="0 0 100 130" preserveAspectRatio="xMidYMax meet">'+svgInner+'</svg>'+
+    '<div class="companion">'+storyCtx.animalEmoji+'</div>'+
+    sfxHtml+bubbleHtml;
+}
+
+function renderDots(){
+  var html='';
+  for(var i=0;i<PANEL_COUNT;i++){
+    var cls = i===currentPanelIdx? 'active' : (i<currentPanelIdx? 'seen':'');
+    html+='<span class="page-dot'+(cls? ' '+cls:'')+'"></span>';
+  }
+  document.getElementById('dots').innerHTML=html;
+}
+
+function renderCurrentPanel(direction){
+  var def=STORY[currentActIdx][currentPanelIdx];
+  var isOld = currentActIdx===2;
+  var stage=document.getElementById('panelStage');
+  stage.className='panel-stage size-'+def.size+(direction? ' anim-'+direction:'');
+  stage.innerHTML=artHTML(def, currentPanelIdx, isOld);
+
+  var t = typeof def.t==='function'? def.t(storyCtx): def.t;
+  var narr=document.getElementById('narration');
+  narr.className='narration'+(direction? ' anim-'+direction:'');
+  narr.innerHTML='<span class="num">'+(currentPanelIdx+1)+'</span>'+t;
+
+  document.getElementById('pageCount').textContent=(currentPanelIdx+1)+' / '+PANEL_COUNT;
+  renderDots();
+  document.getElementById('prevBtn').disabled = (currentActIdx===0 && currentPanelIdx===0);
+  document.getElementById('nextBtn').textContent = (currentActIdx===2 && currentPanelIdx===PANEL_COUNT-1)? '처음부터 다시 ▶' : '다음 컷 ▶';
+}
+
+function goToAct(i, panelIdx, direction){
+  currentActIdx=i; currentPanelIdx=panelIdx;
+  document.querySelectorAll('.act-chip').forEach(function(c,idx){ c.classList.toggle('active', idx===i); });
+  document.getElementById('chapterTitle').textContent=CHAPTERS[i].title;
+  document.getElementById('chapterBlurb').textContent=CHAPTERS[i].blurb;
+  renderCurrentPanel(direction);
+}
+
+function goNext(){
+  if(currentActIdx===2 && currentPanelIdx===PANEL_COUNT-1){ goToAct(0,0,null); return; }
+  if(currentPanelIdx<PANEL_COUNT-1){ currentPanelIdx++; renderCurrentPanel('next'); }
+  else { goToAct(currentActIdx+1, 0, 'next'); }
+}
+function goPrev(){
+  if(currentPanelIdx>0){ currentPanelIdx--; renderCurrentPanel('prev'); }
+  else if(currentActIdx>0){ goToAct(currentActIdx-1, PANEL_COUNT-1, 'prev'); }
+}
+
+document.getElementById('actChips').addEventListener('click', function(e){
+  var btn=e.target.closest('.act-chip');
+  if(!btn) return;
+  goToAct(Number(btn.dataset.act), 0, null);
+});
+document.getElementById('prevBtn').addEventListener('click', goPrev);
+document.getElementById('nextBtn').addEventListener('click', goNext);
+document.getElementById('tapPrev').addEventListener('click', goPrev);
+document.getElementById('tapNext').addEventListener('click', goNext);
+document.getElementById('comicCta').addEventListener('click', function(){
+  goToAct(0,0,null);
+  document.getElementById('comicSection').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+(function(){
+  var startX=null;
+  var wrap=document.getElementById('stageWrap');
+  wrap.addEventListener('pointerdown', function(e){ startX=e.clientX; });
+  wrap.addEventListener('pointerup', function(e){
+    if(startX==null) return;
+    var dx=e.clientX-startX; startX=null;
+    if(Math.abs(dx)<40) return;
+    if(dx<0) goNext(); else goPrev();
+  });
+})();
+document.addEventListener('keydown', function(e){
+  if(!document.getElementById('results').classList.contains('show')) return;
+  var tag=(document.activeElement && document.activeElement.tagName)||'';
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if(e.key==='ArrowRight'){ goNext(); }
+  else if(e.key==='ArrowLeft'){ goPrev(); }
+});
+
+/* ---------------- 실행 ---------------- */
+function runAll(){
+  var dateStr=document.getElementById('birthDate').value;
+  var timeStr=document.getElementById('birthTime').value;
+  if(!dateStr) return;
+  var p=computeSaju(dateStr,timeStr);
+  var a=analyze(p);
+  var birthYear=Number(dateStr.split('-')[0]);
+
+  renderPillars(p);
+  renderYongsin(a);
+  renderStats(a);
+  renderRadar(a);
+  renderCards(a);
+  storyCtx=buildContext(a,p,birthYear);
+  renderAdvice(storyCtx);
+  renderSpouse(storyCtx);
+
+  document.getElementById('comicCtaName').textContent=(gender==='female'?'그녀':'그')+'의 인생 만화';
+  document.getElementById('results').classList.add('show');
+
+  goToAct(0,0,null);
+}
+
+document.getElementById('sajuForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  runAll();
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+runAll();
+})();
+</script>
