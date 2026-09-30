@@ -218,6 +218,26 @@ a{color:var(--accent);}
 .polaroid-caption{text-align:center; font-family:"Gowun Batang",serif; color:#3a3226; font-size:.82rem; margin-top:10px;}
 .spouse-info{flex:1; min-width:220px;}
 .spouse-info p{margin:10px 0 0; font-size:.92rem; line-height:1.8; color:var(--fg);}
+.meeting-box{
+  margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);
+}
+.meeting-box h4{margin:0 0 8px; font-size:.98rem;}
+.meeting-box p{margin:0; font-size:.9rem; line-height:1.8; color:var(--fg);}
+
+/* ---------- 10년 단위 타임라인 ---------- */
+.decade-timeline{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;}
+.decade-card{
+  background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:14px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.decade-head{display:flex; align-items:center; justify-content:space-between;}
+.decade-num{font-family:"Gowun Batang",serif; font-size:1.15rem; font-weight:700;}
+.decade-elem{
+  display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%;
+  font-size:.75rem; font-weight:900; color:#1b1406;
+}
+.decade-group{font-size:.72rem; color:var(--fg-dim); letter-spacing:.03em;}
+.decade-card p{margin:2px 0 0; font-size:.82rem; line-height:1.6; color:var(--fg);}
 
 /* ---------- comic (인생 만화) ---------- */
 .comic-card{padding:0; overflow:hidden;}
@@ -437,6 +457,16 @@ footer{text-align:center; color:var(--fg-dim); font-size:.76rem; padding-top:10p
         <h3>💞 어울리는 인간관계</h3>
         <p id="relationText"></p>
       </div>
+      <div class="info-card" style="grid-column:1/-1;">
+        <h3>🌟 비슷한 유명인</h3>
+        <div class="chip-row" id="celebChips"></div>
+        <p id="celebText" style="margin-top:8px;"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>10년마다 성공 열쇠</h2><span>대운 기준 · 10대 ~ 70대</span></div>
+      <div class="decade-timeline" id="decadeTimeline" style="margin-top:14px;"></div>
     </section>
 
     <section class="card">
@@ -450,6 +480,10 @@ footer{text-align:center; color:var(--fg-dim); font-size:.76rem; padding-top:10p
           <div class="chip-row" id="spouseChips"></div>
           <p id="spouseText"></p>
         </div>
+      </div>
+      <div class="meeting-box">
+        <h4>📍 어디서, 어떻게 만나면 좋을까</h4>
+        <p id="meetingText"></p>
       </div>
     </section>
 
@@ -591,6 +625,35 @@ function tenGodOf(dmStemIdx, targetElem, targetYang){
 }
 
 var GOD_GROUP={'비견':'비겁','겁재':'비겁','식신':'식상','상관':'식상','편재':'재성','정재':'재성','편관':'관성','정관':'관성','편인':'인성','정인':'인성'};
+
+/* ---------------- 대운(10년 단위 운세) 계산 ---------------- */
+function combinedIndex(stemIdx, branchIdx){
+  for(var i=0;i<60;i++){ if(i%10===stemIdx && i%12===branchIdx) return i; }
+  return 0;
+}
+function nodeDay(y,m){ // 절기 근사 경계일(그 달 지지가 시작되는 날); m은 임의의 정수(월 범위를 벗어나도 됨)
+  var yy=y+Math.floor((m-1)/12);
+  var mm=((m-1)%12+12)%12+1;
+  return utcDays(yy,mm,MONTH_TABLE[mm].cut);
+}
+function computeDaeun(y,m,d,hour,yearStem,monthStem,monthBranch,genderVal){
+  var forward = (isYang(yearStem) && genderVal==='male') || (!isYang(yearStem) && genderVal==='female');
+  var bd=utcDays(y,m,d);
+  var nodes=[];
+  for(var mm=-1; mm<=13; mm++){ nodes.push(nodeDay(y,mm)); }
+  nodes.sort(function(a,b){return a-b;});
+  var prev=null, next=null;
+  nodes.forEach(function(n){ if(n<=bd) prev=n; if(n>bd && next===null) next=n; });
+  var startAge = forward? Math.max(1, Math.round((next-bd)/3)) : Math.max(1, Math.round((bd-prev)/3));
+  var monthIdx=combinedIndex(monthStem, monthBranch);
+  return {forward:forward, startAge:startAge, monthIdx:monthIdx};
+}
+function daeunPillarForAge(daeun, age){
+  var k=Math.max(1, Math.floor((age-daeun.startAge)/10)+1);
+  var idx=((daeun.monthIdx + (daeun.forward? k : -k))%60+60)%60;
+  var ageStart=daeun.startAge+(k-1)*10;
+  return {stem:idx%10, branch:idx%12, ageStart:ageStart, ageEnd:ageStart+9};
+}
 
 function analyze(pillars){
   var dmStem=pillars.day.stem;
@@ -819,6 +882,61 @@ function renderSpouse(ctx){
   document.getElementById('spouseText').textContent=
     '배우자궁(일지)의 동물은 '+ctx.dayBranchAnimal+'띠 — '+SPOUSE_PERSONALITY[ctx.spouseGodGroup]+
     ' 전통 명리학에서는 '+(gender==='male'?'남성':'여성')+'의 배우자를 '+ctx.spouseGodGroup+'으로 보는데, 이 사주에서는 '+ctx.spouseElem+' 기운이 짙어 '+ELEMENT_INFO[ctx.spouseElem].keyword+'을(를) 닮은 인상을 줄 사람이에요. (전통 해석을 재미로 각색한 내용이에요.)';
+  document.getElementById('meetingText').textContent =
+    MEETING_PLACE[ctx.spouseElem] + ' ' + MEETING_HOW[ctx.spouseGodGroup];
+}
+
+/* ---------------- 배우자를 만나기 좋은 곳 ---------------- */
+var MEETING_PLACE={
+  '목':'자연·야외 활동이 있는 곳에서 만날 확률이 높아요 — 등산·러닝 모임, 원예·식물 클래스, 자기계발 스터디 같은 성장 지향 모임이 잘 맞아요.',
+  '화':'사람이 많고 활기찬 자리에서 만날 확률이 높아요 — 공연·페스티벌, 사교 모임, 소개팅 앱, 스포츠 관람처럼 에너지가 넘치는 장소가 잘 맞아요.',
+  '토':'익숙하고 편안한 관계망 안에서 만날 확률이 높아요 — 직장·지인 소개, 오래된 동호회, 동네 커뮤니티, 봉사활동처럼 신뢰가 쌓인 자리가 잘 맞아요.',
+  '금':'체계적이고 격식 있는 자리에서 만날 확률이 높아요 — 업무 네트워킹, 세미나·자격증 모임, 정식 소개팅처럼 기준이 분명한 만남이 잘 맞아요.',
+  '수':'차분하고 지적인 공간에서 만날 확률이 높아요 — 독서모임, 온라인 커뮤니티, 여행지, 조용한 카페·서점에서 자연스럽게 시작될 가능성이 높아요.'
+};
+var MEETING_HOW={
+  '재성':'현실적인 대화(일·목표·계획)로 신뢰를 먼저 쌓으면 관계가 빠르게 진전돼요.',
+  '관성':'격식을 지키며 진지하게 다가갈 때, 그리고 공식적인 자리(소개·모임)를 통할 때 인연이 이어질 확률이 높아요.'
+};
+
+/* ---------------- 비슷한 유명인 (성향 매칭 · 재미 콘텐츠) ---------------- */
+var CATEGORY_CELEBRITY={
+  '비겁':['손흥민','일론 머스크','마리 퀴리'],
+  '식상':['지드래곤','파블로 피카소','이효리'],
+  '재성':['워런 버핏','오프라 윈프리','이병철'],
+  '관성':['반기문','김연아','이순신'],
+  '인성':['아인슈타인','유발 하라리','법정 스님']
+};
+function renderCelebrities(ctx){
+  var names=CATEGORY_CELEBRITY[ctx.dominant];
+  document.getElementById('celebChips').innerHTML=names.map(function(n){return '<span class="chip">'+n+'</span>';}).join('');
+  document.getElementById('celebText').textContent=
+    '당신의 '+ctx.dominant+' 기운과 닮은 성향으로 자주 언급되는 인물들이에요. 실제 사주를 확인한 것이 아니라, 성격 유형을 재미로 매칭한 결과예요.';
+}
+
+/* ---------------- 10년 단위 성공 키워드 (대운 기반) ---------------- */
+function renderDecades(ctx, daeun){
+  var decades=[10,20,30,40,50,60,70];
+  var html='';
+  decades.forEach(function(dec){
+    var age=dec+5;
+    var pillar=daeunPillarForAge(daeun, age);
+    var elem=STEM_ELEM[pillar.stem];
+    var branchElem=BRANCH_ELEM[pillar.branch];
+    var branchAnimal=BRANCH_ANIMAL[pillar.branch];
+    var god=tenGodOf(ctx.dmStemIdx, elem, isYang(pillar.stem));
+    var group=GOD_GROUP[god];
+    var info=CATEGORY_INFO[group];
+    var isChallenge = elem===ctx.challengeElem;
+    var msg=ELEMENT_INFO[elem].keyword+'에 '+branchAnimal+'띠(' +branchElem+') 기운이 더해지는 시기예요. '+info.strengths[0]+'을(를) 발판 삼아 '+info.careers[0]+'에 힘을 쏟아보면 특히 잘 풀려요.';
+    if(isChallenge) msg+=' 다만 '+elem+' 기운에 휘둘려 무리하지 않도록 균형을 챙기세요.';
+    html+='<div class="decade-card">'+
+      '<div class="decade-head"><span class="decade-num">'+dec+'대</span><span class="decade-elem" style="background:'+elemColor(elem)+'">'+ELEM_HAN[elem]+'</span></div>'+
+      '<div class="decade-group">'+group+' · '+STEMS[pillar.stem]+STEM_H[pillar.stem]+BRANCHES[pillar.branch]+BRANCH_H[pillar.branch]+' · 만 '+pillar.ageStart+'~'+pillar.ageEnd+'세</div>'+
+      '<p>'+msg+'</p>'+
+    '</div>';
+  });
+  document.getElementById('decadeTimeline').innerHTML=html;
 }
 
 /* ---------------- 인생 만화 (30컷) ---------------- */
@@ -845,6 +963,7 @@ function buildContext(a,p,birthYear){
     day:{stemHan:STEM_H[p.day.stem], branchHan:BRANCH_H[p.day.branch]},
     hour:{stemHan:STEM_H[p.hour.stem], branchHan:BRANCH_H[p.hour.branch]},
     dayHan:STEM_H[p.day.stem]+BRANCH_H[p.day.branch],
+    dmStemIdx:p.day.stem,
     animal:BRANCH_ANIMAL[yi], animalEmoji:BRANCH_ANIMAL_EMOJI[yi],
     dayBranchAnimal:BRANCH_ANIMAL[di],
     dmElem:a.dmElem, dmElemHan:ELEM_HAN[a.dmElem],
@@ -1196,7 +1315,9 @@ function runAll(){
   if(!dateStr) return;
   var p=computeSaju(dateStr,timeStr);
   var a=analyze(p);
-  var birthYear=Number(dateStr.split('-')[0]);
+  var dparts=dateStr.split('-').map(Number);
+  var birthYear=dparts[0];
+  var tparts=(timeStr||'12:00').split(':').map(Number);
 
   renderPillars(p);
   renderYongsin(a);
@@ -1206,6 +1327,10 @@ function runAll(){
   storyCtx=buildContext(a,p,birthYear);
   renderAdvice(storyCtx);
   renderSpouse(storyCtx);
+  renderCelebrities(storyCtx);
+
+  var daeun=computeDaeun(dparts[0],dparts[1],dparts[2],tparts[0],p.year.stem,p.month.stem,p.month.branch,gender);
+  renderDecades(storyCtx, daeun);
 
   document.getElementById('comicCtaName').textContent=(gender==='female'?'그녀':'그')+'의 인생 만화';
   document.getElementById('results').classList.add('show');
